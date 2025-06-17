@@ -138,7 +138,6 @@ const Chat = () => {
     >
       {currentChatId ? (
         <>
-          {/* Header */}
           <Box
             display="flex"
             alignItems="center"
@@ -165,7 +164,6 @@ const Chat = () => {
             </Box>
           </Box>
 
-          {/* Messages */}
           <Box
             flex={1}
             p={2}
@@ -198,7 +196,6 @@ const Chat = () => {
             <div ref={scrollRef} />
           </Box>
 
-          {/* Input */}
           <Box px={2} py={1} borderTop="1px solid #ccc" bgcolor="#f5f5f5">
             <TextField
               fullWidth
