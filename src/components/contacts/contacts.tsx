@@ -13,8 +13,8 @@ import { fetchAllUsers } from "@/firebase/user-service";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentChatId } from "@/store/chatSlice";
 import { RootState } from "@/store";
-import { db } from '@/firebase/firebase';
-import { onValue, push, ref, set } from 'firebase/database';
+import { db } from "@/firebase/firebase";
+import { onValue, push, ref, set } from "firebase/database";
 type SomeFunction = (...args: any[]) => void;
 
 interface IUser {
@@ -31,18 +31,15 @@ interface IMessage {
   timestamp: number;
 }
 
-
-
 const Contacts = () => {
   const [users, setUsers] = useState<IUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<IUser[]>([]);
   const [search, setSearch] = useState("");
-  const [lastMessage, setLastMessage] = useState<IMessage>();
   const dispatch = useDispatch();
-    const currentChatId = useSelector(
-      (state: RootState) => state.chat.currentChatId
-    );
-    console.log("Current Chat Id: ",currentChatId);
+  const currentChatId = useSelector(
+    (state: RootState) => state.chat.currentChatId
+  );
+  console.log("Current Chat Id: ", currentChatId);
 
   const currentUser =
     typeof window !== "undefined"
@@ -65,25 +62,6 @@ const Contacts = () => {
     setFilteredUsers(filtered);
   }, [search, users]);
 
-    useEffect(() => {
-      if (!currentChatId) return;
-      const chatRef = ref(db, `messages/${currentChatId}/lastMessage`);
-      let msgs: IMessage = {
-              text:"",
-              senderId: "",
-              timestamp: 1
-      }
-      const unsubscribe = onValue(chatRef, (snapshot) => {
-        snapshot.forEach((childSnapshot) => {
-          const data = childSnapshot.val();
-          msgs = data;
-        });
-        setLastMessage(msgs);
-      });
-      return () => unsubscribe();
-    }, [currentChatId]);
-  
-
   const handleContactClick = (contact: IUser) => {
     if (!currentUser.uid || !contact.uid) return;
     const chatId = [currentUser.uid, contact.uid].sort().join("_");
@@ -92,19 +70,47 @@ const Contacts = () => {
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-   setSearch(e.target.value);
-   console.log("search",search);
+    setSearch(e.target.value);
+    console.log("search", search);
   };
 
-      const debounce = (func:SomeFunction,wait:number) =>{
-        let timerId: ReturnType<typeof setTimeout>;
-        return (...args:unknown[]) =>{
-          clearTimeout(timerId);
-          timerId = setTimeout(()=> func(...args),wait)
-        }
-      }
+  const debounce = (func: SomeFunction, wait: number) => {
+    let timerId: ReturnType<typeof setTimeout>;
+    return (...args: unknown[]) => {
+      clearTimeout(timerId);
+      timerId = setTimeout(() => func(...args), wait);
+    };
+  };
   const debounceCall = debounce(handleSearch, 600);
-  console.log("Messages: ",lastMessage?.text);
+
+  useEffect(() => {
+    if (!currentUser.uid) return;
+
+    fetchAllUsers(currentUser.uid, (allUsers) => {
+      // For each user, attach their last message
+      const promises = allUsers.map((user) => {
+        const chatId = [currentUser.uid, user.uid].sort().join("_");
+        return new Promise<IUser>((resolve) => {
+          const lastMsgRef = ref(db, `lastMessages/${chatId}`);
+          onValue(
+            lastMsgRef,
+            (snapshot) => {
+              const lastMessageData = snapshot.val();
+              resolve({
+                ...user,
+                lastMessage: lastMessageData?.text || "",
+              });
+            },
+            { onlyOnce: true }
+          );
+        });
+      });
+
+      Promise.all(promises).then((usersWithLastMsg) => {
+        setUsers(usersWithLastMsg);
+      });
+    });
+  }, [currentUser.uid]);
 
   return (
     <Box
@@ -125,7 +131,6 @@ const Contacts = () => {
         fullWidth
         placeholder="Search users..."
         variant="outlined"
-       
         onChange={debounceCall}
         sx={{ my: 2 }}
         InputProps={{
@@ -153,8 +158,13 @@ const Contacts = () => {
               <Typography variant="body1">
                 {item.displayName || item.email?.split("@")[0]}
               </Typography>
-              <Typography variant="caption">
-                {lastMessage?.text || ""}
+              <Typography
+                variant="caption"
+                color="textSecondary"
+                noWrap
+                width="180px"
+              >
+                {item.lastMessage || "No messages yet"}
               </Typography>
             </Box>
           </Box>

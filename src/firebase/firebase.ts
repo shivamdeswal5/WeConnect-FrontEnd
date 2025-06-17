@@ -2,7 +2,7 @@ import { getApps, initializeApp, getApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { getDatabase } from "firebase/database";
+import { getDatabase, onDisconnect, ref, set } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC33Ct3rKTnlmNH26G2IUgpWixifnIj5z0",
@@ -16,6 +16,12 @@ const firebaseConfig = {
 };
 
 const app = !getApps.length ? initializeApp(firebaseConfig) : getApp();
+
+export const setUserPresence = (uid: string) => {
+  const statusRef = ref(db, `onlineUsers/${uid}`);
+  set(statusRef, true); // mark as online
+  onDisconnect(statusRef).set(false); // mark as offline on disconnect
+};
 
 export const auth = getAuth(app);
 export const db = getDatabase(app)
