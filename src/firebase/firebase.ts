@@ -19,8 +19,8 @@ const app = !getApps.length ? initializeApp(firebaseConfig) : getApp();
 
 export const setUserPresence = (uid: string) => {
   const statusRef = ref(db, `onlineUsers/${uid}`);
-  set(statusRef, true); // mark as online
-  onDisconnect(statusRef).set(false); // mark as offline on disconnect
+  set(statusRef, true); 
+  onDisconnect(statusRef).set(false); 
 };
 
 export const auth = getAuth(app);

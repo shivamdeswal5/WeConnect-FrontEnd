@@ -36,10 +36,16 @@ const Contacts = () => {
   const [filteredUsers, setFilteredUsers] = useState<IUser[]>([]);
   const [search, setSearch] = useState("");
   const dispatch = useDispatch();
+
   const currentChatId = useSelector(
     (state: RootState) => state.chat.currentChatId
   );
   console.log("Current Chat Id: ", currentChatId);
+    const selectedUser =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('selectedUser') || '{}')
+      : {};
+
 
   const currentUser =
     typeof window !== "undefined"
@@ -65,6 +71,7 @@ const Contacts = () => {
   const handleContactClick = (contact: IUser) => {
     if (!currentUser.uid || !contact.uid) return;
     const chatId = [currentUser.uid, contact.uid].sort().join("_");
+    localStorage.setItem("currentChatId",JSON.stringify(chatId));
     dispatch(setCurrentChatId(chatId));
     localStorage.setItem("selectedUser", JSON.stringify(contact));
   };
@@ -87,7 +94,6 @@ const Contacts = () => {
     if (!currentUser.uid) return;
 
     fetchAllUsers(currentUser.uid, (allUsers) => {
-      // For each user, attach their last message
       const promises = allUsers.map((user) => {
         const chatId = [currentUser.uid, user.uid].sort().join("_");
         return new Promise<IUser>((resolve) => {

@@ -26,6 +26,7 @@ const SideBar = () => {
     // console.log("currentUser",currentUser);
     localStorage.removeItem("user");
     localStorage.removeItem("selectedUser");
+    localStorage.removeItem("token");
     router.push('/login');
 
   };
