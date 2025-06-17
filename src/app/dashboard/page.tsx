@@ -6,7 +6,7 @@ import Chat from '@/components/chat/chat';
 
 export default function page() {
   return (
-    <Stack direction={"row"} height={"98vh"}  overflow="hidden" >
+    <Stack direction={"row"} height={"100vh"}  overflow="hidden" >
       <SideBar/>  
       <Contacts/> 
       <Chat/>

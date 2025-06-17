@@ -78,7 +78,7 @@ const Chat = () => {
       flex={3}
       display="flex"
       flexDirection="column"
-      height="98vh"
+      height="100vh"
       width="100%"
     >
       {currentChatId ? (
@@ -95,10 +95,10 @@ const Chat = () => {
             <Avatar src={selectedUser.photoURL || ''} />
             <Box ml={2}>
               <Typography variant="subtitle1">
-                {selectedUser.displayName || selectedUser.email}
+                {selectedUser.name || selectedUser.email}
               </Typography>
               <Typography variant="caption" color="green">
-                {selectedUser.isOnline ? 'Online' : 'Offline'}
+                {currentUser.isOnline ? 'Online' : 'Offline'}
               </Typography>
             </Box>
           </Box>

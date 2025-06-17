@@ -51,7 +51,11 @@ const LoginForm = () => {
       body: JSON.stringify(userData),
     });
 
-    localStorage.setItem("user", JSON.stringify(userData));
+    const newUserData = {
+      ...userData, isOnline:true
+    }
+
+    localStorage.setItem("user", JSON.stringify(newUserData));
     localStorage.setItem("token", token);
   };
 
