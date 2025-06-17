@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -10,9 +9,9 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { useEffect, useState } from 'react';
-import { fetchAllUsers } from '../../firebase/user-service';
+import { fetchAllUsers } from '@/firebase/user-service';
 import { useDispatch } from 'react-redux';
-import { setCurrentChatId, setSelectedUser } from '../../store/chatSlice';
+import { setCurrentChatId } from '@/store/chatSlice';
 
 interface IUser {
   uid?: string;
@@ -26,7 +25,6 @@ const Contacts = () => {
   const [users, setUsers] = useState<IUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<IUser[]>([]);
   const [search, setSearch] = useState('');
-
   const dispatch = useDispatch();
 
   const currentUser =
@@ -53,19 +51,8 @@ const Contacts = () => {
   const handleContactClick = (contact: IUser) => {
     if (!currentUser.uid || !contact.uid) return;
     const chatId = [currentUser.uid, contact.uid].sort().join('_');
-
     dispatch(setCurrentChatId(chatId));
-
-    dispatch(
-      setSelectedUser({
-        uid: contact.uid,
-        displayName:
-          contact.displayName || contact.email?.split('@')[0] || 'User',
-        photoURL: contact.photoURL || '',
-        email: contact.email,
-        isOnline: true,
-      })
-    );
+    localStorage.setItem('selectedUser', JSON.stringify(contact));
   };
 
   return (
@@ -81,50 +68,39 @@ const Contacts = () => {
         pt: 2,
       }}
     >
-      <Typography variant="h4" component="h1">
-        Messages
-      </Typography>
+      <Typography variant="h4">Messages</Typography>
 
-      <Box mr={2} mt={2} mb={2}>
-        <TextField
-          fullWidth
-          placeholder="Search users..."
-          variant="outlined"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
+      <TextField
+        fullWidth
+        placeholder="Search users..."
+        variant="outlined"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        sx={{ my: 2 }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon />
+            </InputAdornment>
+          ),
+        }}
+      />
 
-      <Box flex={1} overflow="auto" pr={2}>
+      <Box flex={1} overflow="auto" pr={1}>
         {filteredUsers.map((item, index) => (
           <Box
             key={index}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '10px',
-              borderBottom: '1px solid #ccc',
-              cursor: 'pointer',
-            }}
+            display="flex"
+            alignItems="center"
+            padding="10px"
+            borderBottom="1px solid #ccc"
+            sx={{ cursor: 'pointer' }}
             onClick={() => handleContactClick(item)}
           >
-            <Avatar
-              src={item.photoURL || ''}
-              alt={item.displayName || 'User Avatar'}
-              sx={{ marginRight: '10px' }}
-            />
+            <Avatar src={item.photoURL || ''} sx={{ mr: 1.5 }} />
             <Box>
               <Typography variant="body1">
-                {item.displayName !== 'Anonymous' && item.displayName
-                  ? item.displayName
-                  : item.email?.split('@')[0]}
+                {item.displayName || item.email?.split('@')[0]}
               </Typography>
               <Typography variant="caption">
                 {item?.lastMessage || ''}

@@ -1,5 +1,3 @@
-// components/Chat.tsx
-
 'use client';
 
 import {
@@ -11,34 +9,69 @@ import {
   InputAdornment,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../store/index';
+import { RootState } from '@/store';
+import { db } from '@/firebase/firebase';
+import { onValue, push, ref } from 'firebase/database';
+
+interface IMessage {
+  text: string;
+  senderId: string;
+  timestamp: number;
+}
 
 const Chat = () => {
   const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<IMessage[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const currentChatId = useSelector(
     (state: RootState) => state.chat.currentChatId
   );
-  const selectedUser = useSelector(
-    (state: RootState) => state.chat.selectedUser
-  );
 
-  if (!currentChatId || !selectedUser) {
-    return (
-      <Box
-        flex={1}
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <Typography variant="h6" color="textSecondary">
-          Select a contact to start chatting
-        </Typography>
-      </Box>
-    );
-  }
+  const currentUser =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('user') || '{}')
+      : {};
+  const selectedUser =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('selectedUser') || '{}')
+      : {};
+
+  useEffect(() => {
+    if (!currentChatId) return;
+
+    const chatRef = ref(db, `messages/${currentChatId}`);
+    const unsubscribe = onValue(chatRef, (snapshot) => {
+      const msgs: IMessage[] = [];
+      snapshot.forEach((childSnapshot) => {
+        const data = childSnapshot.val();
+        msgs.push(data);
+      });
+      setMessages(msgs);
+      setTimeout(() => {
+        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    });
+
+    return () => unsubscribe();
+  }, [currentChatId]);
+
+  const handleSend = () => {
+    if (!message.trim() || !currentChatId || !currentUser?.uid) return;
+
+    const newMsg: IMessage = {
+      text: message,
+      senderId: currentUser.uid,
+      timestamp: Date.now(),
+    };
+
+    const chatRef = ref(db, `messages/${currentChatId}`);
+    push(chatRef, newMsg);
+
+    setMessage('');
+  };
 
   return (
     <Box
@@ -48,72 +81,93 @@ const Chat = () => {
       height="98vh"
       width="100%"
     >
-      {/* Chat Header */}
-      <Box
-        display="flex"
-        alignItems="center"
-        px={2}
-        py={1}
-        borderBottom="1px solid #ccc"
-        bgcolor="#f5f5f5"
-      >
-        <Avatar src={selectedUser.photoURL || ''} />
-        <Box ml={2}>
-          <Typography variant="subtitle1">
-            {selectedUser.displayName || selectedUser.email}
-          </Typography>
-          <Typography variant="caption" color="green">
-            {selectedUser.isOnline ? 'Online' : 'Offline'}
-          </Typography>
-        </Box>
-      </Box>
+      {currentChatId ? (
+        <>
+          {/* Header */}
+          <Box
+            display="flex"
+            alignItems="center"
+            px={2}
+            py={1}
+            borderBottom="1px solid #ccc"
+            bgcolor="#f5f5f5"
+          >
+            <Avatar src={selectedUser.photoURL || ''} />
+            <Box ml={2}>
+              <Typography variant="subtitle1">
+                {selectedUser.displayName || selectedUser.email}
+              </Typography>
+              <Typography variant="caption" color="green">
+                {selectedUser.isOnline ? 'Online' : 'Offline'}
+              </Typography>
+            </Box>
+          </Box>
 
-      {/* Messages List */}
-      <Box
-        flex={1}
-        p={2}
-        overflow="auto"
-        sx={{
-          backgroundColor: '#fafafa',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-        }}
-      >
-        {/* TEMPORARY MESSAGES */}
-        <Box alignSelf="flex-end" bgcolor="#DCF8C6" p={1} borderRadius={2}>
-          <Typography variant="body2">Hi there!</Typography>
-        </Box>
-        <Box alignSelf="flex-start" bgcolor="#fff" p={1} borderRadius={2}>
-          <Typography variant="body2">Hello! How are you?</Typography>
-        </Box>
-      </Box>
+          {/* Messages */}
+          <Box
+            flex={1}
+            p={2}
+            overflow="auto"
+            sx={{
+              backgroundColor: '#fafafa',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+          >
+            {messages.map((msg, index) => (
+              <Box
+                key={index}
+                alignSelf={
+                  msg.senderId === currentUser.uid
+                    ? 'flex-end'
+                    : 'flex-start'
+                }
+                bgcolor={
+                  msg.senderId === currentUser.uid ? '#DCF8C6' : '#fff'
+                }
+                p={1.2}
+                borderRadius={2}
+                maxWidth="70%"
+              >
+                <Typography variant="body2">{msg.text}</Typography>
+              </Box>
+            ))}
+            <div ref={scrollRef} />
+          </Box>
 
-      {/* Message Input */}
-      <Box px={2} py={1} borderTop="1px solid #ccc" bgcolor="#f5f5f5">
-        <TextField
-          fullWidth
-          placeholder="Type a message"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  onClick={() => {
-                    if (message.trim()) {
-                      console.log('Send:', message);
-                      setMessage('');
-                    }
-                  }}
-                >
-                  <SendIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
+          {/* Input */}
+          <Box px={2} py={1} borderTop="1px solid #ccc" bgcolor="#f5f5f5">
+            <TextField
+              fullWidth
+              placeholder="Type a message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={handleSend}>
+                      <SendIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+        </>
+      ) : (
+        <Box
+          flex={1}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Typography variant="h6" color="textSecondary">
+            Select a contact to start chatting
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 };
