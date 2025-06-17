@@ -14,6 +14,9 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { db } from '@/firebase/firebase';
 import { onValue, push, ref } from 'firebase/database';
+import { useDispatch } from "react-redux";
+import { setMessages } from "@/store/chatSlice";
+import { addMessage } from "@/store/chatSlice";
 
 interface IMessage {
   text: string;
@@ -23,8 +26,10 @@ interface IMessage {
 
 const Chat = () => {
   const [message, setMessage] = useState('');
+  const [status, setStatus] = useState('Offline');
   const [messages, setMessages] = useState<IMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dispatch = useDispatch();
 
   const currentChatId = useSelector(
     (state: RootState) => state.chat.currentChatId
@@ -48,15 +53,19 @@ const Chat = () => {
       snapshot.forEach((childSnapshot) => {
         const data = childSnapshot.val();
         msgs.push(data);
+        dispatch(addMessage(data));
       });
       setMessages(msgs);
       setTimeout(() => {
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
+
     });
+
 
     return () => unsubscribe();
   }, [currentChatId]);
+
 
   const handleSend = () => {
     if (!message.trim() || !currentChatId || !currentUser?.uid) return;
@@ -73,6 +82,14 @@ const Chat = () => {
     setMessage('');
   };
 
+  const handleClick = () => {
+    setStatus('typing...');    
+  };
+
+  const handleHover = () => {
+    setStatus('offline');    
+  };
+
   return (
     <Box
       flex={3}
@@ -80,6 +97,7 @@ const Chat = () => {
       flexDirection="column"
       height="100vh"
       width="100%"
+      onMouseOver = {handleHover}
     >
       {currentChatId ? (
         <>
@@ -95,10 +113,11 @@ const Chat = () => {
             <Avatar src={selectedUser.photoURL || ''} />
             <Box ml={2}>
               <Typography variant="subtitle1">
-                {selectedUser.name || selectedUser.email}
+                {selectedUser.displayName || selectedUser.email}
               </Typography>
               <Typography variant="caption" color="green">
-                {currentUser.isOnline ? 'Online' : 'Offline'}
+                {/* {currentUser.isOnline ? 'Online' : 'Offline'} */}
+                {status}
               </Typography>
             </Box>
           </Box>
@@ -144,6 +163,7 @@ const Chat = () => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              onInput={handleClick}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">

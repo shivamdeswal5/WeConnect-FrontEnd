@@ -10,8 +10,9 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import { useEffect, useState } from "react";
 import { fetchAllUsers } from "@/firebase/user-service";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setCurrentChatId } from "@/store/chatSlice";
+import { RootState } from "@/store";
 type SomeFunction = (...args: any[]) => void;
 
 interface IUser {
@@ -27,6 +28,11 @@ const Contacts = () => {
   const [filteredUsers, setFilteredUsers] = useState<IUser[]>([]);
   const [search, setSearch] = useState("");
   const dispatch = useDispatch();
+   const messages = useSelector(
+      (state: RootState) => state.chat.messages
+    );
+
+    console.log("Messages are: ",messages);
 
   const currentUser =
     typeof window !== "undefined"
