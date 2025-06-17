@@ -13,6 +13,8 @@ import { fetchAllUsers } from "@/firebase/user-service";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentChatId } from "@/store/chatSlice";
 import { RootState } from "@/store";
+import { db } from '@/firebase/firebase';
+import { onValue, push, ref, set } from 'firebase/database';
 type SomeFunction = (...args: any[]) => void;
 
 interface IUser {
@@ -23,16 +25,24 @@ interface IUser {
   lastMessage?: string;
 }
 
+interface IMessage {
+  text: string;
+  senderId: string;
+  timestamp: number;
+}
+
+
+
 const Contacts = () => {
   const [users, setUsers] = useState<IUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<IUser[]>([]);
   const [search, setSearch] = useState("");
+  const [lastMessage, setLastMessage] = useState<IMessage>();
   const dispatch = useDispatch();
-   const messages = useSelector(
-      (state: RootState) => state.chat.messages
+    const currentChatId = useSelector(
+      (state: RootState) => state.chat.currentChatId
     );
-
-    console.log("Messages are: ",messages);
+    console.log("Current Chat Id: ",currentChatId);
 
   const currentUser =
     typeof window !== "undefined"
@@ -55,6 +65,25 @@ const Contacts = () => {
     setFilteredUsers(filtered);
   }, [search, users]);
 
+    useEffect(() => {
+      if (!currentChatId) return;
+      const chatRef = ref(db, `messages/${currentChatId}/lastMessage`);
+      let msgs: IMessage = {
+              text:"",
+              senderId: "",
+              timestamp: 1
+      }
+      const unsubscribe = onValue(chatRef, (snapshot) => {
+        snapshot.forEach((childSnapshot) => {
+          const data = childSnapshot.val();
+          msgs = data;
+        });
+        setLastMessage(msgs);
+      });
+      return () => unsubscribe();
+    }, [currentChatId]);
+  
+
   const handleContactClick = (contact: IUser) => {
     if (!currentUser.uid || !contact.uid) return;
     const chatId = [currentUser.uid, contact.uid].sort().join("_");
@@ -75,6 +104,7 @@ const Contacts = () => {
         }
       }
   const debounceCall = debounce(handleSearch, 600);
+  console.log("Messages: ",lastMessage?.text);
 
   return (
     <Box
@@ -124,7 +154,7 @@ const Contacts = () => {
                 {item.displayName || item.email?.split("@")[0]}
               </Typography>
               <Typography variant="caption">
-                {item?.lastMessage || ""}
+                {lastMessage?.text || ""}
               </Typography>
             </Box>
           </Box>

@@ -13,7 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { db } from '@/firebase/firebase';
-import { onValue, push, ref } from 'firebase/database';
+import { onValue, push, ref, set } from 'firebase/database';
 import { useDispatch } from "react-redux";
 import { setMessages } from "@/store/chatSlice";
 import { addMessage } from "@/store/chatSlice";
@@ -62,7 +62,6 @@ const Chat = () => {
 
     });
 
-
     return () => unsubscribe();
   }, [currentChatId]);
 
@@ -78,6 +77,9 @@ const Chat = () => {
 
     const chatRef = ref(db, `messages/${currentChatId}`);
     push(chatRef, newMsg);
+
+    const chatRef2 = ref(db, `messages/${currentChatId}/lastMessage`);
+    set(chatRef2, newMsg);
 
     setMessage('');
   };
