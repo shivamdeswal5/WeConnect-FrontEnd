@@ -58,16 +58,16 @@ const Contacts = () => {
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
    setSearch(e.target.value);
-   console.log("search");
+   console.log("search",search);
   };
 
-  const debounce = (func: SomeFunction, wait: number) => {
-    let timerId: ReturnType<typeof setTimeout>;
-    return (...args: unknown[]) => {
-      clearTimeout(timerId);
-      timerId = setTimeout(() => func(...args), wait);
-    };
-  };
+      const debounce = (func:SomeFunction,wait:number) =>{
+        let timerId: ReturnType<typeof setTimeout>;
+        return (...args:unknown[]) =>{
+          clearTimeout(timerId);
+          timerId = setTimeout(()=> func(...args),wait)
+        }
+      }
   const debounceCall = debounce(handleSearch, 600);
 
   return (
@@ -89,7 +89,7 @@ const Contacts = () => {
         fullWidth
         placeholder="Search users..."
         variant="outlined"
-        value={search}
+       
         onChange={debounceCall}
         sx={{ my: 2 }}
         InputProps={{
