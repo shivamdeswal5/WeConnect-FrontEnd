@@ -64,7 +64,7 @@ const SignUpForm = () => {
         },
         body: JSON.stringify(userData),
       });
-
+      
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("token", token);
 
