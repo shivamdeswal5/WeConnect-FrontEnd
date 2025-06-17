@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -11,7 +12,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { useEffect, useState } from 'react';
 import { fetchAllUsers } from '../../firebase/user-service';
 import { useDispatch } from 'react-redux';
-import { setCurrentChatId } from '../../store/chatSlice';
+import { setCurrentChatId, setSelectedUser } from '../../store/chatSlice';
 
 interface IUser {
   uid?: string;
@@ -52,8 +53,19 @@ const Contacts = () => {
   const handleContactClick = (contact: IUser) => {
     if (!currentUser.uid || !contact.uid) return;
     const chatId = [currentUser.uid, contact.uid].sort().join('_');
+
     dispatch(setCurrentChatId(chatId));
-    localStorage.setItem('selectedUser', JSON.stringify(contact));
+
+    dispatch(
+      setSelectedUser({
+        uid: contact.uid,
+        displayName:
+          contact.displayName || contact.email?.split('@')[0] || 'User',
+        photoURL: contact.photoURL || '',
+        email: contact.email,
+        isOnline: true,
+      })
+    );
   };
 
   return (
