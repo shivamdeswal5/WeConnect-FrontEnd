@@ -19,8 +19,11 @@ import {
   ref,
   set,
   onDisconnect,
+  remove,
+  get,
+  update,
 } from 'firebase/database';
-import { setMessages, addMessage } from '@/store/chatSlice';
+import { addMessage } from '@/store/chatSlice';
 
 interface IMessage {
   text: string;
@@ -34,6 +37,8 @@ const Chat = () => {
   const [messages, setMessagesState] = useState<IMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const dispatch = useDispatch();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingStartedRef = useRef(false);
 
   const currentChatId = useSelector(
     (state: RootState) => state.chat.currentChatId
@@ -73,21 +78,42 @@ const Chat = () => {
       }, 100);
     });
 
+    // Reset unread count for current user when they open chat
+    const unreadRef = ref(
+      db,
+      `unreadMessages/${currentUser.uid}/${currentChatId}`
+    );
+    set(unreadRef, 0);
+
     return () => unsubscribe();
   }, [currentChatId]);
 
   useEffect(() => {
     if (!selectedUser?.uid || !currentChatId || !currentUser?.uid) return;
+
     const statusRef = ref(db, `onlineUsers/${selectedUser.uid}`);
     const unsubscribeStatus = onValue(statusRef, (snapshot) => {
       const isOnline = snapshot.val();
       setStatus(isOnline ? 'Online' : 'Offline');
     });
 
-    const typingRef = ref(db, `typingStatus/${currentChatId}/${selectedUser.uid}`);
+    const typingRef = ref(
+      db,
+      `typingStatus/${currentChatId}/${selectedUser.uid}`
+    );
     const unsubscribeTyping = onValue(typingRef, (snapshot) => {
       const isTyping = snapshot.val();
       if (isTyping) setStatus('Typing...');
+      else {
+        const onlineRef = ref(db, `onlineUsers/${selectedUser.uid}`);
+        onValue(
+          onlineRef,
+          (snap) => {
+            setStatus(snap.val() ? 'Online' : 'Offline');
+          },
+          { onlyOnce: true }
+        );
+      }
     });
 
     return () => {
@@ -99,11 +125,23 @@ const Chat = () => {
   const handleTyping = () => {
     if (!currentChatId || !currentUser?.uid) return;
 
-    const typingRef = ref(db, `typingStatus/${currentChatId}/${currentUser.uid}`);
-    set(typingRef, true);
+    const typingRef = ref(
+      db,
+      `typingStatus/${currentChatId}/${currentUser.uid}`
+    );
 
-    setTimeout(() => {
+    if (!typingStartedRef.current) {
+      set(typingRef, true);
+      typingStartedRef.current = true;
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
       set(typingRef, false);
+      typingStartedRef.current = false;
     }, 2000);
   };
 
@@ -119,23 +157,28 @@ const Chat = () => {
     const chatRef = ref(db, `messages/${currentChatId}`);
     push(chatRef, newMsg);
 
+    // Update last message
     const lastMsgRef = ref(db, `lastMessages/${currentChatId}`);
     set(lastMsgRef, {
       ...newMsg,
       receiverId: selectedUser.uid,
     });
 
+    // Increment unread count for receiver
+    const unreadRef = ref(
+      db,
+      `unreadMessages/${selectedUser.uid}/${currentChatId}`
+    );
+    get(unreadRef).then((snap) => {
+      const currentCount = snap.val() || 0;
+      set(unreadRef, currentCount + 1);
+    });
+
     setMessage('');
   };
 
   return (
-    <Box
-      flex={3}
-      display="flex"
-      flexDirection="column"
-      height="100vh"
-      width="100%"
-    >
+    <Box flex={3} display="flex" flexDirection="column" height="100vh" width="100%">
       {currentChatId ? (
         <>
           <Box
@@ -179,13 +222,9 @@ const Chat = () => {
               <Box
                 key={index}
                 alignSelf={
-                  msg.senderId === currentUser.uid
-                    ? 'flex-end'
-                    : 'flex-start'
+                  msg.senderId === currentUser.uid ? 'flex-end' : 'flex-start'
                 }
-                bgcolor={
-                  msg.senderId === currentUser.uid ? '#DCF8C6' : '#fff'
-                }
+                bgcolor={msg.senderId === currentUser.uid ? '#DCF8C6' : '#fff'}
                 p={1.2}
                 borderRadius={2}
                 maxWidth="70%"
@@ -217,12 +256,7 @@ const Chat = () => {
           </Box>
         </>
       ) : (
-        <Box
-          flex={1}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
+        <Box flex={1} display="flex" alignItems="center" justifyContent="center">
           <Typography variant="h6" color="textSecondary">
             Select a contact to start chatting
           </Typography>
