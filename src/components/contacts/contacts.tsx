@@ -1,17 +1,17 @@
-'use client'
-import { Avatar, Box, Typography } from "@mui/material";
+'use client';
+
 import {
-  collection,
-  collectionGroup,
-  doc,
-  onSnapshot,
-  query,
-  setDoc,
-  where,
-} from "firebase/firestore";
-import { useEffect, useRef, useState } from "react";
-import SearchIcon from "@mui/icons-material/Search";
-import Search from "@mui/icons-material/Search";
+  Avatar,
+  Box,
+  Typography,
+  TextField,
+  InputAdornment,
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import { useEffect, useState } from 'react';
+import { fetchAllUsers } from '../../firebase/user-service';
+import { useDispatch } from 'react-redux';
+import { setCurrentChatId } from '../../store/chatSlice';
 
 interface IUser {
   uid?: string;
@@ -22,75 +22,104 @@ interface IUser {
 }
 
 const Contacts = () => {
- 
-  const [user, setUser] = useState<IUser[]>([]);
-  const [allUsers, setAllUsers] = useState<IUser[]>([]);
-  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [users, setUsers] = useState<IUser[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<IUser[]>([]);
+  const [search, setSearch] = useState('');
+
+  const dispatch = useDispatch();
+
+  const currentUser =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('user') || '{}')
+      : {};
+
+  useEffect(() => {
+    if (!currentUser.uid) return;
+    fetchAllUsers(currentUser.uid, (allUsers) => {
+      setUsers(allUsers);
+    });
+  }, [currentUser.uid]);
+
+  useEffect(() => {
+    const filtered = users.filter((u) =>
+      (u.displayName || u.email || '')
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    );
+    setFilteredUsers(filtered);
+  }, [search, users]);
+
+  const handleContactClick = (contact: IUser) => {
+    if (!currentUser.uid || !contact.uid) return;
+    const chatId = [currentUser.uid, contact.uid].sort().join('_');
+    dispatch(setCurrentChatId(chatId));
+    localStorage.setItem('selectedUser', JSON.stringify(contact));
+  };
 
   return (
     <Box
-      flex={1}
+      display="flex"
+      flexDirection="column"
+      height="100vh"
       sx={{
-        p: "16px 0 16px 16px",
-        width: "300px",
-        borderRight: "1px solid #ccc",
+        width: '300px',
+        borderRight: '1px solid #ccc',
+        boxSizing: 'border-box',
+        px: 2,
+        pt: 2,
       }}
     >
-      <Typography variant="h4" component={"h1"}>
+      <Typography variant="h4" component="h1">
         Messages
       </Typography>
 
       <Box mr={2} mt={2} mb={2}>
-        <Search>  
-        </Search>
+        <TextField
+          fullWidth
+          placeholder="Search users..."
+          variant="outlined"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
       </Box>
 
-      <Typography
-        variant="subtitle1"
-        component={"h2"}
-        sx={{ marginTop: "20px" }}
-      >
-        Sort By
-      </Typography>
-      
-      <Box
-        id="scrollContainer"
-        maxHeight={"40%"}
-        overflow={"auto"}
-      >
-        {user.map((item, index) => {
-          return (
-            <Box
-              key={index}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                padding: "10px",
-                borderBottom: "1px solid #ccc",
-                cursor: "pointer",
-              }}
-            >
-              <Avatar
-                src={item.photoURL || ""}
-                alt={item.displayName || "User Avatar"}
-                sx={{ marginRight: "10px" }}
-              />
-              <Box>
-                <Typography variant="body1">
-                  {item.displayName !== "Anonymous" || undefined
-                    ? item.displayName
-                    : item.email?.split("@")[0]}
-                </Typography>
-                <Typography variant="caption">{item?.lastMessage}</Typography>
-              </Box>
-              <Box>
-                
-                  <Typography variant="subtitle2"></Typography>
-            
-              </Box>{" "}
+      <Box flex={1} overflow="auto" pr={2}>
+        {filteredUsers.map((item, index) => (
+          <Box
+            key={index}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '10px',
+              borderBottom: '1px solid #ccc',
+              cursor: 'pointer',
+            }}
+            onClick={() => handleContactClick(item)}
+          >
+            <Avatar
+              src={item.photoURL || ''}
+              alt={item.displayName || 'User Avatar'}
+              sx={{ marginRight: '10px' }}
+            />
+            <Box>
+              <Typography variant="body1">
+                {item.displayName !== 'Anonymous' && item.displayName
+                  ? item.displayName
+                  : item.email?.split('@')[0]}
+              </Typography>
+              <Typography variant="caption">
+                {item?.lastMessage || ''}
+              </Typography>
             </Box>
-          );
-        })}
+          </Box>
+        ))}
       </Box>
     </Box>
   );
