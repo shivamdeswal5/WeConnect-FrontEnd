@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Avatar,
@@ -6,12 +6,13 @@ import {
   Typography,
   TextField,
   InputAdornment,
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import { useEffect, useState } from 'react';
-import { fetchAllUsers } from '@/firebase/user-service';
-import { useDispatch } from 'react-redux';
-import { setCurrentChatId } from '@/store/chatSlice';
+} from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import { useEffect, useState } from "react";
+import { fetchAllUsers } from "@/firebase/user-service";
+import { useDispatch } from "react-redux";
+import { setCurrentChatId } from "@/store/chatSlice";
+type SomeFunction = (...args: any[]) => void;
 
 interface IUser {
   uid?: string;
@@ -24,12 +25,12 @@ interface IUser {
 const Contacts = () => {
   const [users, setUsers] = useState<IUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<IUser[]>([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const dispatch = useDispatch();
 
   const currentUser =
-    typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('user') || '{}')
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("user") || "{}")
       : {};
 
   useEffect(() => {
@@ -41,7 +42,7 @@ const Contacts = () => {
 
   useEffect(() => {
     const filtered = users.filter((u) =>
-      (u.displayName || u.email || '')
+      (u.displayName || u.email || "")
         .toLowerCase()
         .includes(search.toLowerCase())
     );
@@ -50,10 +51,24 @@ const Contacts = () => {
 
   const handleContactClick = (contact: IUser) => {
     if (!currentUser.uid || !contact.uid) return;
-    const chatId = [currentUser.uid, contact.uid].sort().join('_');
+    const chatId = [currentUser.uid, contact.uid].sort().join("_");
     dispatch(setCurrentChatId(chatId));
-    localStorage.setItem('selectedUser', JSON.stringify(contact));
+    localStorage.setItem("selectedUser", JSON.stringify(contact));
   };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+   setSearch(e.target.value);
+   console.log("search");
+  };
+
+  const debounce = (func: SomeFunction, wait: number) => {
+    let timerId: ReturnType<typeof setTimeout>;
+    return (...args: unknown[]) => {
+      clearTimeout(timerId);
+      timerId = setTimeout(() => func(...args), wait);
+    };
+  };
+  const debounceCall = debounce(handleSearch, 600);
 
   return (
     <Box
@@ -61,9 +76,9 @@ const Contacts = () => {
       flexDirection="column"
       height="100vh"
       sx={{
-        width: '300px',
-        borderRight: '1px solid #ccc',
-        boxSizing: 'border-box',
+        width: "300px",
+        borderRight: "1px solid #ccc",
+        boxSizing: "border-box",
         px: 2,
         pt: 2,
       }}
@@ -75,7 +90,7 @@ const Contacts = () => {
         placeholder="Search users..."
         variant="outlined"
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={debounceCall}
         sx={{ my: 2 }}
         InputProps={{
           startAdornment: (
@@ -94,16 +109,16 @@ const Contacts = () => {
             alignItems="center"
             padding="10px"
             borderBottom="1px solid #ccc"
-            sx={{ cursor: 'pointer' }}
+            sx={{ cursor: "pointer" }}
             onClick={() => handleContactClick(item)}
           >
-            <Avatar src={item.photoURL || ''} sx={{ mr: 1.5 }} />
+            <Avatar src={item.photoURL || ""} sx={{ mr: 1.5 }} />
             <Box>
               <Typography variant="body1">
-                {item.displayName || item.email?.split('@')[0]}
+                {item.displayName || item.email?.split("@")[0]}
               </Typography>
               <Typography variant="caption">
-                {item?.lastMessage || ''}
+                {item?.lastMessage || ""}
               </Typography>
             </Box>
           </Box>

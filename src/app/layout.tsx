@@ -6,7 +6,6 @@ import 'react-toastify/dist/ReactToastify.css'
 import { ToastContainer } from 'react-toastify'
 import ReduxProvider from '@/store/redux-provider';
 
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -36,9 +35,7 @@ export default function RootLayout({
           <ReduxProvider>
             {children}
             <ToastContainer />
-
           </ReduxProvider>
-
         </AppRouterCacheProvider>
         
       </body>

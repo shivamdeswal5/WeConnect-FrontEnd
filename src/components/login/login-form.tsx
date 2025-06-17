@@ -52,7 +52,7 @@ const LoginForm = () => {
     });
 
     const newUserData = {
-      ...userData, isOnline:true
+      ...userData
     }
 
     localStorage.setItem("user", JSON.stringify(newUserData));

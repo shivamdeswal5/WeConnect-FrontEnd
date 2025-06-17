@@ -9,8 +9,26 @@ import LibraryMusicOutlinedIcon from "@mui/icons-material/LibraryMusicOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import { useRouter } from "next/navigation";
+
 
 const SideBar = () => {
+
+  const router = useRouter();
+
+    const handleLogout = () => {
+    console.log("Logout");
+    // const currentUser =
+    // typeof window !== 'undefined'
+    //   ? JSON.parse(localStorage.getItem('user') || '{}')
+    //   : {};
+    // currentUser.isOnline = false;
+    // console.log("currentUser",currentUser);
+    localStorage.removeItem("user");
+    localStorage.removeItem("selectedUser");
+    router.push('/login');
+
+  };
  
   return (
     <Drawer variant="permanent" anchor="left" sx={{ width: 54, flexShrink: 0 }}>
@@ -37,7 +55,7 @@ const SideBar = () => {
             <CalendarMonthOutlinedIcon sx={{ fontSize: 18 }} color="success" />
           </Box>
         </Stack>
-        <Stack spacing={2} flexGrow={1} justifyContent={"flex-end"} pb={2}>
+        <Stack spacing={2} flexGrow={1} justifyContent={"flex-end"} pb={2} sx={{cursor: 'pointer'}} onClick = {handleLogout}>
           <SettingsOutlinedIcon />
           <LogoutOutlinedIcon/>
         </Stack>
