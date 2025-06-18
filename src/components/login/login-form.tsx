@@ -39,6 +39,7 @@ const LoginForm = () => {
 
     try {
       await set(ref(db, `users/${user.uid}`), userData);
+      Cookies.set('userSession', token, { expires: 2 });
     } catch (err) {
       console.warn("Firebase DB save failed:", err);
     }
@@ -58,7 +59,7 @@ const LoginForm = () => {
 
     localStorage.setItem("user", JSON.stringify(newUserData));
     localStorage.setItem("token", token);
-    Cookies.set('userSession', token, { expires: 1 });
+    
   };
 
   const onSubmit = async (data: LoginFormInputs) => {

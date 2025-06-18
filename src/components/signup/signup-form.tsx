@@ -9,6 +9,7 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { ref, set } from "firebase/database";
 import { auth, db } from "@/firebase/firebase";
 import Link from 'next/link'
+import Cookies from 'js-cookie'
 
 interface SignUpFormInputs {
   name: string;
@@ -70,6 +71,7 @@ const SignUpForm = () => {
       localStorage.setItem("token", token);
       sessionStorage.setItem('userSession', "true");
       sessionStorage.setItem('sessionToken',token);
+      Cookies.set('userSession', token, { expires: 2 });
 
       toast.success(`Welcome, ${data.name}`);
       router.push("/dashboard");

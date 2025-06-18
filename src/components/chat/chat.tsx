@@ -7,7 +7,9 @@ import {
   TextField,
   Typography,
   InputAdornment,
+  Popover,
 } from '@mui/material';
+import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 import SendIcon from '@mui/icons-material/Send';
 import { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
@@ -19,12 +21,10 @@ import {
   ref,
   set,
   onDisconnect,
-  remove,
   get,
-  update,
 } from 'firebase/database';
 import { addMessage } from '@/store/chatSlice';
-import EmojiPicker from 'emoji-picker-react';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
 interface IMessage {
   text: string;
@@ -36,6 +36,8 @@ const Chat = () => {
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState('Offline');
   const [messages, setMessagesState] = useState<IMessage[]>([]);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const dispatch = useDispatch();
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -174,10 +176,15 @@ const Chat = () => {
     setMessage('');
   };
 
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setMessage((prev) => prev + emojiData.emoji);
+  };
+
   return (
     <Box flex={3} display="flex" flexDirection="column" height="100vh" width="100%">
       {currentChatId ? (
         <>
+          {/* Header */}
           <Box
             display="flex"
             alignItems="center"
@@ -204,6 +211,7 @@ const Chat = () => {
             </Box>
           </Box>
 
+          {/* Messages */}
           <Box
             flex={1}
             p={2}
@@ -232,6 +240,7 @@ const Chat = () => {
             <div ref={scrollRef} />
           </Box>
 
+          {/* Input */}
           <Box px={2} py={1} borderTop="1px solid #ccc" bgcolor="#f5f5f5">
             <TextField
               fullWidth
@@ -243,16 +252,31 @@ const Chat = () => {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    
+                    <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                      <EmojiEmotionsIcon />
+                    </IconButton>
                     <IconButton onClick={handleSend}>
                       <SendIcon />
                     </IconButton>
                   </InputAdornment>
-                
                 ),
               }}
-              
             />
+            <Popover
+              open={Boolean(anchorEl)}
+              anchorEl={anchorEl}
+              onClose={() => setAnchorEl(null)}
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+              }}
+              transformOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left',
+              }}
+            >
+              <EmojiPicker onEmojiClick={handleEmojiClick} height={350} />
+            </Popover>
           </Box>
         </>
       ) : (
