@@ -10,12 +10,13 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { useEffect, useState } from "react";
-import { fetchAllUsers } from "@/firebase/user-service";
+import { fetchUsersBatch } from "@/firebase/user-service";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentChatId } from "@/store/chatSlice";
 import { RootState } from "@/store";
 import { db } from "@/firebase/firebase";
-import { onValue, ref } from "firebase/database";
+import { get, onValue, ref } from "firebase/database";
+import InfiniteScroll from "react-infinite-scroll-component";
 
 type SomeFunction = (...args: any[]) => void;
 
@@ -25,15 +26,18 @@ interface IUser {
   photoURL?: string;
   displayName?: string;
   lastMessage?: string;
-  unreadCount?: number; 
+  unreadCount?: number;
 }
 
 const Contacts = () => {
   const [users, setUsers] = useState<IUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<IUser[]>([]);
   const [search, setSearch] = useState("");
-  const dispatch = useDispatch();
+  const [lastEmail, setLastEmail] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 10;
 
+  const dispatch = useDispatch();
   const currentChatId = useSelector(
     (state: RootState) => state.chat.currentChatId
   );
@@ -43,10 +47,6 @@ const Contacts = () => {
       ? JSON.parse(localStorage.getItem("user") || "{}")
       : {};
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
-  };
-
   const debounce = (func: SomeFunction, wait: number) => {
     let timerId: ReturnType<typeof setTimeout>;
     return (...args: unknown[]) => {
@@ -54,7 +54,61 @@ const Contacts = () => {
       timerId = setTimeout(() => func(...args), wait);
     };
   };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+  };
+
   const debounceCall = debounce(handleSearch, 600);
+
+  const handleContactClick = (contact: IUser) => {
+    if (!currentUser.uid || !contact.uid) return;
+    const chatId = [currentUser.uid, contact.uid].sort().join("_");
+    localStorage.setItem("currentChatId", JSON.stringify(chatId));
+    dispatch(setCurrentChatId(chatId));
+    localStorage.setItem("selectedUser", JSON.stringify(contact));
+  };
+
+  const fetchNextBatch = async () => {
+    const fetched = await fetchUsersBatch(currentUser.uid, lastEmail, LIMIT);
+
+    if (fetched.length === 0) {
+      setHasMore(false);
+      return;
+    }
+
+    const updatedUsers = await Promise.all(
+      fetched.map(async (user) => {
+        const chatId = [currentUser.uid, user.uid].sort().join("_");
+        const lastMsgRef = ref(db, `lastMessages/${chatId}`);
+        const unreadRef = ref(db, `unreadMessages/${currentUser.uid}/${chatId}`);
+
+        const lastMsgSnap = await get(lastMsgRef);
+        const unreadSnap = await get(unreadRef);
+
+        return {
+          ...user,
+          lastMessage: lastMsgSnap.val()?.text || "",
+          unreadCount: unreadSnap.val() || 0,
+        };
+      })
+    );
+
+    setUsers((prev) => [...prev, ...updatedUsers]);
+    setLastEmail(fetched[fetched.length - 1].email);
+  };
+
+  useEffect(() => {
+    if (currentUser.uid) {
+      fetchNextBatch();
+    }
+
+    return () => {
+      setUsers([]);
+      setLastEmail(null);
+      setHasMore(true);
+    };
+  }, [currentUser.uid]);
 
   useEffect(() => {
     const filtered = users.filter((u) =>
@@ -65,75 +119,42 @@ const Contacts = () => {
     setFilteredUsers(filtered);
   }, [search, users]);
 
-  const handleContactClick = (contact: IUser) => {
-    if (!currentUser.uid || !contact.uid) return;
-    const chatId = [currentUser.uid, contact.uid].sort().join("_");
-    localStorage.setItem("currentChatId", JSON.stringify(chatId));
-    dispatch(setCurrentChatId(chatId));
-    localStorage.setItem("selectedUser", JSON.stringify(contact));
-  };
 
   useEffect(() => {
-    if (!currentUser.uid) return;
-
     const unsubscribers: Array<() => void> = [];
 
-    fetchAllUsers(currentUser.uid, (allUsers) => {
-      const promises = allUsers.map((user) => {
-        const chatId = [currentUser.uid, user.uid].sort().join("_");
+    users.forEach((user) => {
+      const chatId = [currentUser.uid, user.uid].sort().join("_");
 
-        return new Promise<IUser>((resolve) => {
-          const lastMsgRef = ref(db, `lastMessages/${chatId}`);
-          const unreadRef = ref(
-            db,
-            `unreadMessages/${currentUser.uid}/${chatId}`
-          );
+      const lastMsgRef = ref(db, `lastMessages/${chatId}`);
+      const unreadRef = ref(db, `unreadMessages/${currentUser.uid}/${chatId}`);
 
-          let updatedUser: IUser = { ...user };
-
-          const unsub1 = onValue(lastMsgRef, (snapshot) => {
-            const lastMsg = snapshot.val();
-            if (lastMsg?.text) {
-              updatedUser.lastMessage = lastMsg.text;
-            }
-
-            setUsers((prev) =>
-              prev.map((u) =>
-                u.uid === user.uid
-                  ? { ...u, lastMessage: lastMsg?.text || "" }
-                  : u
-              )
-            );
-          });
-
-          const unsub2 = onValue(unreadRef, (snapshot) => {
-            const count = snapshot.val() || 0;
-            updatedUser.unreadCount = count;
-
-            setUsers((prev) =>
-              prev.map((u) =>
-                u.uid === user.uid
-                  ? { ...u, unreadCount: count }
-                  : u
-              )
-            );
-          });
-
-          unsubscribers.push(() => unsub1());
-          unsubscribers.push(() => unsub2());
-          resolve(updatedUser);
-        });
+      const unsub1 = onValue(lastMsgRef, (snapshot) => {
+        const msg = snapshot.val()?.text || "";
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.uid === user.uid ? { ...u, lastMessage: msg } : u
+          )
+        );
       });
 
-      Promise.all(promises).then((userList) => {
-        setUsers(userList);
+      const unsub2 = onValue(unreadRef, (snapshot) => {
+        const count = snapshot.val() || 0;
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.uid === user.uid ? { ...u, unreadCount: count } : u
+          )
+        );
       });
-    });    
+
+      unsubscribers.push(() => unsub1());
+      unsubscribers.push(() => unsub2());
+    });
 
     return () => {
-      unsubscribers.forEach((u) => u());
+      unsubscribers.forEach((unsub) => unsub());
     };
-  }, [currentUser.uid]);
+  }, [users]);
 
   return (
     <Box
@@ -165,44 +186,56 @@ const Contacts = () => {
         }}
       />
 
-      <Box flex={1} overflow="auto" pr={1}>
-        {filteredUsers.map((item, index) => (
-          <Box
-            key={index}
-            display="flex"
-            alignItems="center"
-            padding="10px"
-            borderBottom="1px solid #ccc"
-            sx={{ cursor: "pointer" }}
-            onClick={() => handleContactClick(item)}
-          >
-            <Badge
-              color="error"
-              badgeContent={item.unreadCount || 0}
-              invisible={!item.unreadCount}
-              overlap="circular"
+      <Box flex={1} overflow="auto" pr={1} id="scrollableDiv"
+        sx={{
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+        }}  >
+        <InfiniteScroll
+          dataLength={users.length}
+          next={fetchNextBatch}
+          hasMore={hasMore}
+          loader={<Typography textAlign="center">Loading...</Typography>}
+          scrollableTarget="scrollableDiv"
+        >
+          {filteredUsers.map((item, index) => (
+            <Box
+              key={index}
+              display="flex"
+              alignItems="center"
+              padding="10px"
+              borderBottom="1px solid #ccc"
+              sx={{ cursor: "pointer" }}
+              onClick={() => handleContactClick(item)}
             >
-              <Avatar src={item.photoURL || ""} sx={{ mr: 1.5 }} />
-            </Badge>
-            <Box>
-              <Typography variant="body1">
-                {item.displayName || item.email?.split("@")[0]}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="textSecondary"
-                noWrap
-                width="180px"
+              <Badge
+                color="error"
+                badgeContent={item.unreadCount || 0}
+                invisible={!item.unreadCount}
+                overlap="circular"
               >
-                {item.lastMessage || "No messages yet"}
-              </Typography>
+                <Avatar src={item.photoURL || ""} sx={{ mr: 1.5 }} />
+              </Badge>
+              <Box>
+                <Typography variant="body1">
+                  {item.displayName || item.email?.split("@")[0]}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="textSecondary"
+                  noWrap
+                  width="180px"
+                >
+                  {item.lastMessage || "No messages yet"}
+                </Typography>
+              </Box>
             </Box>
-          </Box>
-        ))}
+          ))}
+        </InfiniteScroll>
       </Box>
     </Box>
   );
 };
 
 export default Contacts;
-

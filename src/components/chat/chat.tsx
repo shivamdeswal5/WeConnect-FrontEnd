@@ -24,6 +24,7 @@ import {
   update,
 } from 'firebase/database';
 import { addMessage } from '@/store/chatSlice';
+import EmojiPicker from 'emoji-picker-react';
 
 interface IMessage {
   text: string;
@@ -78,7 +79,6 @@ const Chat = () => {
       }, 100);
     });
 
-    // Reset unread count for current user when they open chat
     const unreadRef = ref(
       db,
       `unreadMessages/${currentUser.uid}/${currentChatId}`
@@ -156,15 +156,12 @@ const Chat = () => {
 
     const chatRef = ref(db, `messages/${currentChatId}`);
     push(chatRef, newMsg);
-
-    // Update last message
     const lastMsgRef = ref(db, `lastMessages/${currentChatId}`);
     set(lastMsgRef, {
       ...newMsg,
       receiverId: selectedUser.uid,
     });
 
-    // Increment unread count for receiver
     const unreadRef = ref(
       db,
       `unreadMessages/${selectedUser.uid}/${currentChatId}`
@@ -192,7 +189,7 @@ const Chat = () => {
             <Avatar src={selectedUser.photoURL || ''} />
             <Box ml={2}>
               <Typography variant="subtitle1">
-                {selectedUser.displayName || selectedUser.email}
+                {selectedUser.displayName || selectedUser.name || selectedUser.email}
               </Typography>
               <Typography
                 variant="caption"
@@ -246,12 +243,15 @@ const Chat = () => {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
+                    
                     <IconButton onClick={handleSend}>
                       <SendIcon />
                     </IconButton>
                   </InputAdornment>
+                
                 ),
               }}
+              
             />
           </Box>
         </>
