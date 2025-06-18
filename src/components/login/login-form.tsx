@@ -14,6 +14,7 @@ import {
 import { auth } from "@/firebase/firebase";
 import { ref, set } from "firebase/database";
 import { db } from "@/firebase/firebase";
+import Link from 'next/link'
 
 interface LoginFormInputs {
   email: string;
@@ -133,6 +134,9 @@ const LoginForm = () => {
       >
         Sign in with Google
       </Button>
+      <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+        Don't have an account? <Link href="/signup">Sign up</Link>
+      </Typography>
     </Box>
   );
 };

@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { ref, set } from "firebase/database";
 import { auth, db } from "@/firebase/firebase";
+import Link from 'next/link'
 
 interface SignUpFormInputs {
   name: string;
@@ -111,6 +112,12 @@ const SignUpForm = () => {
           Create Account
         </Button>
       </form>
+      <Typography variant="body2">
+          Already have an account?{' '}
+          <Link href="/login" style={{ color: '#1976d2', textDecoration: 'underline' }}>
+            Login here
+          </Link>
+        </Typography>
     </Box>
   );
 };

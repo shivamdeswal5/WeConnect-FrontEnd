@@ -16,7 +16,7 @@ export function fetchAllUsers(currentUid: string, callback: (users: any[]) => vo
 export async function fetchUsersBatch(
   currentUid: string,
   lastEmail: string | null = null,
-  limit: number = 10
+  limit: number = 2
 ): Promise<any[]> {
   const usersRef = ref(db, "users");
 
@@ -35,3 +35,5 @@ export async function fetchUsersBatch(
 
   return users;
 }
+
+console.log("User Data In Batch: ",fetchUsersBatch("FV3Iif0mIKQExAS2t6KJz8W300g1"))
