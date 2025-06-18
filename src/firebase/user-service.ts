@@ -1,5 +1,5 @@
 import { db } from "./firebase";
-import { onValue, ref } from "firebase/database";
+import { get, limitToFirst, onValue, orderByChild, query, ref, startAfter } from "firebase/database";
 
 export function fetchAllUsers(currentUid: string, callback: (users: any[]) => void) {
   const usersRef = ref(db, "users");
@@ -11,4 +11,27 @@ export function fetchAllUsers(currentUid: string, callback: (users: any[]) => vo
       : [];
     callback(users);
   });
+}
+
+export async function fetchUsersBatch(
+  currentUid: string,
+  lastEmail: string | null = null,
+  limit: number = 10
+): Promise<any[]> {
+  const usersRef = ref(db, "users");
+
+  const usersQuery = lastEmail
+    ? query(usersRef, orderByChild("email"), startAfter(lastEmail), limitToFirst(limit))
+    : query(usersRef, orderByChild("email"), limitToFirst(limit));
+
+  const snapshot = await get(usersQuery);
+  const data = snapshot.val();
+
+  console.log("FETCHED USERS DATA:", data);
+
+  const users = data
+    ? Object.values(data).filter((user: any) => user.uid !== currentUid)
+    : [];
+
+  return users;
 }
