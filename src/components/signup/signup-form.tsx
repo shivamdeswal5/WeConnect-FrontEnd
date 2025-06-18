@@ -1,15 +1,14 @@
 "use client";
 
-import React from "react";
+import { auth, db } from "@/firebase/firebase";
 import { Box, Button, TextField, Typography } from "@mui/material";
-import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { ref, set } from "firebase/database";
-import { auth, db } from "@/firebase/firebase";
-import Link from 'next/link'
-import Cookies from 'js-cookie'
+import Cookies from 'js-cookie';
+import Link from 'next/link';
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { toast } from "react-toastify";
 
 interface SignUpFormInputs {
   name: string;

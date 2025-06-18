@@ -1,5 +1,4 @@
-import React from "react";
-import { Button, Box } from "@mui/material";
+import { Box, Button } from "@mui/material";
 
 export default function LogoutButton() {
   const handleLogout = () => {

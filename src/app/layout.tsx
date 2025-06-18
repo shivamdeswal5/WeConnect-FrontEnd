@@ -1,12 +1,10 @@
+import ReduxProvider from '@/store/redux-provider';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import "./globals.css";
-import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
-import 'react-toastify/dist/ReactToastify.css'
-import { ToastContainer } from 'react-toastify'
-import ReduxProvider from '@/store/redux-provider';
-import { useEffect } from "react";
-import { setUserPresence } from "@/firebase/firebase";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

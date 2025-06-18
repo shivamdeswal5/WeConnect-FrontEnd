@@ -1,5 +1,5 @@
-import { Box, TextField } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import { Box, TextField } from '@mui/material';
 
 const SearchBar = ({ search, setSearch }: { search: string; setSearch: (val: string) => void }) => {
   return (

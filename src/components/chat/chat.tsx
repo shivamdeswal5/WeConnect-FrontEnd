@@ -1,5 +1,4 @@
 'use client';
-
 import {
   Avatar,
   Box,
@@ -25,6 +24,16 @@ import {
 } from 'firebase/database';
 import { addMessage } from '@/store/chatSlice';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import StarterKit from "@tiptap/starter-kit";
+import {
+  MenuButtonBold,
+  MenuButtonItalic,
+  MenuControlsContainer,
+  MenuDivider,
+  MenuSelectHeading,
+  RichTextEditor,
+  type RichTextEditorRef,
+} from "mui-tiptap";
 
 interface IMessage {
   text: string;
@@ -184,7 +193,6 @@ const Chat = () => {
     <Box flex={3} display="flex" flexDirection="column" height="100vh" width="100%">
       {currentChatId ? (
         <>
-          {/* Header */}
           <Box
             display="flex"
             alignItems="center"
@@ -211,7 +219,6 @@ const Chat = () => {
             </Box>
           </Box>
 
-          {/* Messages */}
           <Box
             flex={1}
             p={2}
@@ -240,7 +247,6 @@ const Chat = () => {
             <div ref={scrollRef} />
           </Box>
 
-          {/* Input */}
           <Box px={2} py={1} borderTop="1px solid #ccc" bgcolor="#f5f5f5">
             <TextField
               fullWidth
@@ -277,6 +283,21 @@ const Chat = () => {
             >
               <EmojiPicker onEmojiClick={handleEmojiClick} height={350} />
             </Popover>
+
+            {/* <RichTextEditor
+              extensions={[StarterKit]}
+              content="Enter Text"
+              renderControls={() => (
+                <MenuControlsContainer>
+                  <MenuSelectHeading />
+                  <MenuDivider />
+                  <MenuButtonBold />
+                  <MenuButtonItalic />
+                </MenuControlsContainer>
+
+              )}
+            /> */}
+
           </Box>
         </>
       ) : (

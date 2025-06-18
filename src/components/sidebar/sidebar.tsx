@@ -1,16 +1,16 @@
 'use client'
-import { Box, Divider, Drawer, Stack } from "@mui/material";
 import AnimationIcon from "@mui/icons-material/Animation";
-import Person2Icon from "@mui/icons-material/Person2";
-import LanguageIcon from "@mui/icons-material/Language";
-import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
-import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
-import LibraryMusicOutlinedIcon from "@mui/icons-material/LibraryMusicOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import LanguageIcon from "@mui/icons-material/Language";
+import LibraryMusicOutlinedIcon from "@mui/icons-material/LibraryMusicOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+import MessageOutlinedIcon from "@mui/icons-material/MessageOutlined";
+import Person2Icon from "@mui/icons-material/Person2";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import { useRouter } from "next/navigation";
+import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
+import { Box, Divider, Drawer, Stack } from "@mui/material";
 import Cookies from 'js-cookie';
+import { useRouter } from "next/navigation";
 
  
 const SideBar = () => {

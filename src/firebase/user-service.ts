@@ -1,5 +1,5 @@
-import { db } from "./firebase";
 import { get, limitToFirst, onValue, orderByChild, query, ref, startAfter } from "firebase/database";
+import { db } from "./firebase";
 
 export function fetchAllUsers(currentUid: string, callback: (users: any[]) => void) {
   const usersRef = ref(db, "users");

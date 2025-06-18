@@ -1,22 +1,21 @@
 "use client";
 
+import { db } from "@/firebase/firebase";
+import { fetchUsersBatch } from "@/firebase/user-service";
+import { setCurrentChatId } from "@/store/chatSlice";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   Avatar,
-  Box,
-  Typography,
-  TextField,
-  InputAdornment,
   Badge,
+  Box,
+  InputAdornment,
+  TextField,
+  Typography,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import { useEffect, useState } from "react";
-import { fetchUsersBatch } from "@/firebase/user-service";
-import { useDispatch, useSelector } from "react-redux";
-import { setCurrentChatId } from "@/store/chatSlice";
-import { RootState } from "@/store";
-import { db } from "@/firebase/firebase";
 import { get, onValue, ref } from "firebase/database";
+import { useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
+import { useDispatch } from "react-redux";
 
 type SomeFunction = (...args: any[]) => void;
 
@@ -38,10 +37,7 @@ const Contacts = () => {
   const LIMIT = 10;
 
   const dispatch = useDispatch();
-  const currentChatId = useSelector(
-    (state: RootState) => state.chat.currentChatId
-  );
-
+ 
   const currentUser =
     typeof window !== "undefined"
       ? JSON.parse(localStorage.getItem("user") || "{}")

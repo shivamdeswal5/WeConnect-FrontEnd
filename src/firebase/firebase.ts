@@ -1,6 +1,4 @@
-import { getApps, initializeApp, getApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
+import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getDatabase, onDisconnect, ref, set } from "firebase/database";
 
