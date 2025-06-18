@@ -28,6 +28,7 @@
     "@tiptap/react": "^2.14.0",
     "@tiptap/starter-kit": "^2.14.0",
     "axios": "^1.10.0",
+    "date-fns": "^4.1.0",
     "emoji-picker-react": "^4.12.2",
     "firebase": "^11.9.1",
     "iron-session": "^8.0.4",

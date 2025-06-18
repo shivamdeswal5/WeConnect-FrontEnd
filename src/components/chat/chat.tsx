@@ -8,9 +8,7 @@ import {
   Avatar,
   Box,
   IconButton,
-  InputAdornment,
   Popover,
-  TextField,
   Typography,
 } from '@mui/material';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
@@ -24,16 +22,16 @@ import {
 } from 'firebase/database';
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-// import StarterKit from "@tiptap/starter-kit";
-// import {
-//   MenuButtonBold,
-//   MenuButtonItalic,
-//   MenuControlsContainer,
-//   MenuDivider,
-//   MenuSelectHeading,
-//   RichTextEditor,
-//   type RichTextEditorRef,
-// } from "mui-tiptap";
+import StarterKit from "@tiptap/starter-kit";
+import {
+  MenuButtonBold,
+  MenuButtonItalic,
+  MenuControlsContainer,
+  MenuDivider,
+  MenuSelectHeading,
+  RichTextEditor,
+  type RichTextEditorRef,
+} from "mui-tiptap";
 
 interface IMessage {
   text: string;
@@ -46,7 +44,7 @@ const Chat = () => {
   const [status, setStatus] = useState('Offline');
   const [messages, setMessagesState] = useState<IMessage[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
+  const editorRef = useRef<RichTextEditorRef>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const dispatch = useDispatch();
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -157,10 +155,13 @@ const Chat = () => {
   };
 
   const handleSend = () => {
-    if (!message.trim() || !currentChatId || !currentUser?.uid) return;
+    const plainText = editorRef.current?.editor?.getText().trim();
+    const htmlContent = editorRef.current?.editor?.getHTML();
+
+    if (!plainText || !currentChatId || !currentUser?.uid) return;
 
     const newMsg: IMessage = {
-      text: message,
+      text: htmlContent ?? '',
       senderId: currentUser.uid,
       timestamp: Date.now(),
     };
@@ -183,16 +184,19 @@ const Chat = () => {
     });
 
     setMessage('');
+    editorRef.current?.editor?.commands.clearContent();
   };
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
-    setMessage((prev) => prev + emojiData.emoji);
+    const emoji = emojiData.emoji;
+    editorRef.current?.editor?.commands.insertContent(emoji);
   };
 
   return (
     <Box flex={3} display="flex" flexDirection="column" height="100vh" width="100%">
       {currentChatId ? (
         <>
+          {/* Header */}
           <Box
             display="flex"
             alignItems="center"
@@ -219,6 +223,7 @@ const Chat = () => {
             </Box>
           </Box>
 
+          {/* Messages */}
           <Box
             flex={1}
             p={2}
@@ -236,37 +241,56 @@ const Chat = () => {
                 alignSelf={
                   msg.senderId === currentUser.uid ? 'flex-end' : 'flex-start'
                 }
-                bgcolor={msg.senderId === currentUser.uid ? '#DCF8C6' : '#fff'}
+                bgcolor={msg.senderId === currentUser.uid ? '#DCF8C6' : '#d2d4cff9'}
                 p={1.2}
                 borderRadius={2}
                 maxWidth="70%"
+                sx={{ wordBreak: 'break-word' }}
               >
-                <Typography variant="body2">{msg.text}</Typography>
+                <div
+                  dangerouslySetInnerHTML={{ __html: msg.text }}
+                  style={{ fontSize: '14px' }}
+                />
               </Box>
             ))}
             <div ref={scrollRef} />
           </Box>
 
+          {/* Input Area */}
           <Box px={2} py={1} borderTop="1px solid #ccc" bgcolor="#f5f5f5">
-            <TextField
-              fullWidth
-              placeholder="Type a message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              onInput={handleTyping}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                      <EmojiEmotionsIcon />
-                    </IconButton>
-                    <IconButton onClick={handleSend}>
-                      <SendIcon />
-                    </IconButton>
-                  </InputAdornment>
-                ),
+            <RichTextEditor
+              ref={editorRef}
+              content=""
+              extensions={[StarterKit]}
+              onUpdate={({ editor }) => {
+                setMessage(editor.getHTML());
+                handleTyping();
               }}
+              editorProps={{
+                handleKeyDown: (_view, event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    handleSend();
+                    return true;
+                  }
+                  return false;
+                },
+              }}
+              renderControls={() => (
+                <MenuControlsContainer>
+                  <MenuSelectHeading />
+                  <MenuDivider />
+                  <MenuButtonBold />
+                  <MenuButtonItalic />
+                  <MenuDivider />
+                  <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <EmojiEmotionsIcon />
+                  </IconButton>
+                  <IconButton onClick={handleSend}>
+                    <SendIcon />
+                  </IconButton>
+                </MenuControlsContainer>
+              )}
             />
             <Popover
               open={Boolean(anchorEl)}
@@ -283,21 +307,6 @@ const Chat = () => {
             >
               <EmojiPicker onEmojiClick={handleEmojiClick} height={350} />
             </Popover>
-
-            {/* <RichTextEditor
-              extensions={[StarterKit]}
-              content="Enter Text"
-              renderControls={() => (
-                <MenuControlsContainer>
-                  <MenuSelectHeading />
-                  <MenuDivider />
-                  <MenuButtonBold />
-                  <MenuButtonItalic />
-                </MenuControlsContainer>
-
-              )}
-            /> */}
-
           </Box>
         </>
       ) : (

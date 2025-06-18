@@ -16,7 +16,6 @@ import { get, onValue, ref } from "firebase/database";
 import { useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useDispatch } from "react-redux";
-import { format, isYesterday, isToday } from "date-fns";
 
 interface IUser {
   uid?: string;
@@ -25,8 +24,6 @@ interface IUser {
   displayName?: string;
   lastMessage?: string;
   unreadCount?: number;
-  lastMessageTime?: number;
-  isOnline?: boolean;
 }
 
 const Contacts = () => {
@@ -34,8 +31,6 @@ const Contacts = () => {
   const [search, setSearch] = useState("");
   const [lastEmail, setLastEmail] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const LIMIT = 10;
 
   const dispatch = useDispatch();
@@ -61,21 +56,11 @@ const Contacts = () => {
     localStorage.setItem("selectedUser", JSON.stringify(contact));
   };
 
-  const formatTimestamp = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    if (isToday(date)) return format(date, "h:mm a");
-    if (isYesterday(date)) return "Yesterday";
-    return format(date, "dd/MM/yyyy");
-  };
-
   const fetchNextBatch = async () => {
-    setIsFetchingMore(true);
     const fetched = await fetchUsersBatch(currentUser.uid, lastEmail, LIMIT, search);
 
     if (fetched.length === 0) {
       setHasMore(false);
-      setIsFetchingMore(false);
-      setInitialLoading(false);
       return;
     }
 
@@ -84,44 +69,20 @@ const Contacts = () => {
         const chatId = [currentUser.uid, user.uid].sort().join("_");
         const lastMsgRef = ref(db, `lastMessages/${chatId}`);
         const unreadRef = ref(db, `unreadMessages/${currentUser.uid}/${chatId}`);
-        const statusRef = ref(db, `status/${user.uid}`);
 
-        const [lastMsgSnap, unreadSnap, statusSnap] = await Promise.all([
-          get(lastMsgRef),
-          get(unreadRef),
-          get(statusRef),
-        ]);
-
-        const lastMessage = lastMsgSnap.val()?.text || "";
-        const timestamp = lastMsgSnap.val()?.timestamp || 0;
-        const unreadCount = unreadSnap.val() || 0;
-        const isOnline = statusSnap.val()?.state === "online";
+        const lastMsgSnap = await get(lastMsgRef);
+        const unreadSnap = await get(unreadRef);
 
         return {
           ...user,
-          lastMessage,
-          lastMessageTime: timestamp,
-          unreadCount,
-          isOnline,
+          lastMessage: lastMsgSnap.val()?.text || "",
+          unreadCount: unreadSnap.val() || 0,
         };
       })
     );
 
-    // Remove duplicates and sort by recent timestamp
-    setUsers((prev) => {
-      const uidMap = new Map<string, IUser>();
-      [...prev, ...updatedUsers].forEach((user) => {
-        if (user.uid) uidMap.set(user.uid, user);
-      });
-      const sorted = Array.from(uidMap.values()).sort(
-        (a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0)
-      );
-      return sorted;
-    });
-
+    setUsers((prev) => [...prev, ...updatedUsers]);
     setLastEmail(fetched[fetched.length - 1].email);
-    setIsFetchingMore(false);
-    setInitialLoading(false);
   };
 
   useEffect(() => {
@@ -140,24 +101,16 @@ const Contacts = () => {
     const unsubscribers: Array<() => void> = [];
 
     users.forEach((user) => {
-      if (!user.uid) return;
-
       const chatId = [currentUser.uid, user.uid].sort().join("_");
+
       const lastMsgRef = ref(db, `lastMessages/${chatId}`);
       const unreadRef = ref(db, `unreadMessages/${currentUser.uid}/${chatId}`);
-      const statusRef = ref(db, `status/${user.uid}`);
 
       const unsub1 = onValue(lastMsgRef, (snapshot) => {
-        const data = snapshot.val();
+        const msg = snapshot.val()?.text || "";
         setUsers((prev) =>
           prev.map((u) =>
-            u.uid === user.uid
-              ? {
-                  ...u,
-                  lastMessage: data?.text || "",
-                  lastMessageTime: data?.timestamp || 0,
-                }
-              : u
+            u.uid === user.uid ? { ...u, lastMessage: msg } : u
           )
         );
       });
@@ -171,18 +124,8 @@ const Contacts = () => {
         );
       });
 
-      const unsub3 = onValue(statusRef, (snapshot) => {
-        const isOnline = snapshot.val()?.state === "online";
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.uid === user.uid ? { ...u, isOnline } : u
-          )
-        );
-      });
-
       unsubscribers.push(() => unsub1());
       unsubscribers.push(() => unsub2());
-      unsubscribers.push(() => unsub3());
     });
 
     return () => {
@@ -196,7 +139,7 @@ const Contacts = () => {
       flexDirection="column"
       height="100vh"
       sx={{
-        width: "400px",
+        width: "300px",
         borderRight: "1px solid #ccc",
         boxSizing: "border-box",
         px: 2,
@@ -226,27 +169,22 @@ const Contacts = () => {
         overflow="auto"
         pr={1}
         id="scrollableDiv"
-        sx={{ "&::-webkit-scrollbar": { display: "none" } }}
+        sx={{
+          "&::-webkit-scrollbar": {
+            display: "none",
+          },
+        }}
       >
         <InfiniteScroll
           dataLength={users.length}
           next={fetchNextBatch}
           hasMore={hasMore}
+          loader={<Typography textAlign="center">Loading...</Typography>}
           scrollableTarget="scrollableDiv"
-          loader={
-            <Typography textAlign="center" py={1}>
-              {(initialLoading || isFetchingMore) && "Loading..."}
-            </Typography>
-          }
-          endMessage={
-            <Typography textAlign="center" py={2} color="textSecondary">
-              No more contacts
-            </Typography>
-          }
         >
-          {users.map((item) => (
+          {users.map((item, index) => (
             <Box
-              key={item.uid}
+              key={index}
               display="flex"
               alignItems="center"
               padding="10px"
@@ -260,41 +198,21 @@ const Contacts = () => {
                 invisible={!item.unreadCount}
                 overlap="circular"
               >
-                <Badge
-                  color="success"
-                  variant="dot"
-                  overlap="circular"
-                  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                  invisible={!item.isOnline}
-                >
-                  <Avatar src={item.photoURL || ""} sx={{ mr: 1.5 }} />
-                </Badge>
+                <Avatar src={item.photoURL || ""} sx={{ mr: 1.5 }} />
               </Badge>
-
-              <Box flex="1">
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body1">
-                    {item.displayName || item.email?.split("@")[0]}
-                  </Typography>
-                  {item.lastMessage && item.lastMessageTime && (
-                    <Typography
-                      variant="caption"
-                      color="textSecondary"
-                      sx={{ ml: 1, whiteSpace: "nowrap" }}
-                    >
-                      {formatTimestamp(item.lastMessageTime)}
-                    </Typography>
-                  )}
-                </Box>
-
+              <Box>
+                <Typography variant="body1">
+                  {item.displayName || item.email?.split("@")[0]}
+                </Typography>
                 <Typography
                   variant="caption"
                   color="textSecondary"
                   noWrap
+                  width="180px"
+                  component="div"
                   dangerouslySetInnerHTML={{
                     __html: item.lastMessage || "No messages yet",
                   }}
-                  sx={{ maxWidth: "200px" }}
                 />
               </Box>
             </Box>

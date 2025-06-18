@@ -1,4 +1,4 @@
-import { get, limitToFirst, onValue, orderByChild, query, ref, startAfter } from "firebase/database";
+import { get, limitToFirst, onValue, orderByChild, query, ref, startAfter, startAt, endAt } from "firebase/database";
 import { db } from "./firebase";
 
 export function fetchAllUsers(currentUid: string, callback: (users: any[]) => void) {
@@ -13,27 +13,40 @@ export function fetchAllUsers(currentUid: string, callback: (users: any[]) => vo
   });
 }
 
+
 export async function fetchUsersBatch(
   currentUid: string,
-  lastEmail: string | null = null,
-  limit: number = 12
-): Promise<any[]> {
+  lastEmail: string | null,
+  limit: number,
+  searchQuery: string = ""
+) {
   const usersRef = ref(db, "users");
 
-  const usersQuery = lastEmail
-    ? query(usersRef, orderByChild("email"), startAfter(lastEmail), limitToFirst(limit))
-    : query(usersRef, orderByChild("email"), limitToFirst(limit));
+  let q = query(usersRef, orderByChild("email"));
 
-  const snapshot = await get(usersQuery);
-  const data = snapshot.val();
+  if (searchQuery) {
+    const start = searchQuery;
+    const end = searchQuery + "\uf8ff";
+    q = query(usersRef, orderByChild("email"), startAt(start), endAt(end));
+  }
 
-  console.log("FETCHED USERS DATA:", data);
+  if (lastEmail && !searchQuery) {
+    q = query(usersRef, orderByChild("email"), startAt(lastEmail));
+  }
 
-  const users = data
-    ? Object.values(data).filter((user: any) => user.uid !== currentUid)
-    : [];
+  const snap = await get(q);
 
-  return users;
+  const users: any[] = [];
+  snap.forEach((child) => {
+    const user = child.val();
+    if (user.uid !== currentUid) {
+      users.push(user);
+    }
+  });
+
+  return users.slice(0, limit);
 }
 
-console.log("User Data In Batch: ",fetchUsersBatch("FV3Iif0mIKQExAS2t6KJz8W300g1"))
+fetchUsersBatch("FV3Iif0mIKQExAS2t6KJz8W300g1", null, 10).then(users => {
+  console.log("User Data In Batch: ", users);
+});
