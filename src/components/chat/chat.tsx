@@ -1,39 +1,39 @@
 'use client';
+import { db } from '@/firebase/firebase';
+import { RootState } from '@/store';
+import { addMessage } from '@/store/chatSlice';
+import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
+import SendIcon from '@mui/icons-material/Send';
 import {
   Avatar,
   Box,
   IconButton,
-  TextField,
-  Typography,
   InputAdornment,
   Popover,
+  TextField,
+  Typography,
 } from '@mui/material';
-import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
-import SendIcon from '@mui/icons-material/Send';
-import { useEffect, useRef, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
-import { db } from '@/firebase/firebase';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import {
+  get,
+  onDisconnect,
   onValue,
   push,
   ref,
   set,
-  onDisconnect,
-  get,
 } from 'firebase/database';
-import { addMessage } from '@/store/chatSlice';
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
-import StarterKit from "@tiptap/starter-kit";
-import {
-  MenuButtonBold,
-  MenuButtonItalic,
-  MenuControlsContainer,
-  MenuDivider,
-  MenuSelectHeading,
-  RichTextEditor,
-  type RichTextEditorRef,
-} from "mui-tiptap";
+import { useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+// import StarterKit from "@tiptap/starter-kit";
+// import {
+//   MenuButtonBold,
+//   MenuButtonItalic,
+//   MenuControlsContainer,
+//   MenuDivider,
+//   MenuSelectHeading,
+//   RichTextEditor,
+//   type RichTextEditorRef,
+// } from "mui-tiptap";
 
 interface IMessage {
   text: string;
