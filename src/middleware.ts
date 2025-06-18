@@ -2,13 +2,15 @@ import isAuthenticated from "./firebase/isAuthenticated"
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-
-const protectedRoutes = ["/dashboard"];
-
-
-export default function middleware(req: NextRequest) {
-  if (!isAuthenticated && protectedRoutes.includes(req.nextUrl.pathname)) {
+export default async function middleware(req: NextRequest) {
+  console.log("calling fb",await isAuthenticated())
+  const bool = await isAuthenticated();
+  if ( !bool) {
     const absoluteURL = new URL("/", req.nextUrl.origin);
     return NextResponse.redirect(absoluteURL.toString());
   }
+}
+
+export const config = {
+  matcher: ['/dashboard'],
 }

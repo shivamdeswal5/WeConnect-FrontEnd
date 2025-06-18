@@ -1,13 +1,13 @@
+import { cookies } from "next/headers";
 
-export default function isAuthenticated() {
-  const token =
-    typeof window !== 'undefined'
-      ? JSON.parse(localStorage.getItem('token') || '{}')
-      : {};
+export default async function isAuthenticated(): Promise<boolean> {
+  const cookieStore = await cookies()
+  const user = cookieStore.get("userSession"); 
+  console.log("cookies: ",user)
 
-    if(token.length===0){
-        return false;
-    }else{
-        return true;
-    }
+  if (user) {
+    return true
+  } else {
+    return false
+  }
 }

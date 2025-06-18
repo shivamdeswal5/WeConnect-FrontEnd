@@ -10,23 +10,20 @@ import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import { useRouter } from "next/navigation";
+import Cookies from 'js-cookie';
 
-
+ 
 const SideBar = () => {
 
   const router = useRouter();
 
     const handleLogout = () => {
     console.log("Logout");
-    // const currentUser =
-    // typeof window !== 'undefined'
-    //   ? JSON.parse(localStorage.getItem('user') || '{}')
-    //   : {};
-    // currentUser.isOnline = false;
-    // console.log("currentUser",currentUser);
     localStorage.removeItem("user");
     localStorage.removeItem("selectedUser");
     localStorage.removeItem("token");
+    Cookies.remove("userSession")
+
     router.push('/login');
 
   };

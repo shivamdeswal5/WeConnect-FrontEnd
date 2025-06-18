@@ -57,17 +57,19 @@ const SignUpForm = () => {
         photoURL: user.photoURL || "",
       };
 
-      await fetch("http://localhost:4000/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(userData),
-      });
+      // await fetch("http://localhost:4000/users", {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      //   body: JSON.stringify(userData),
+      // });
       
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("token", token);
+      sessionStorage.setItem('userSession', "true");
+      sessionStorage.setItem('sessionToken',token);
 
       toast.success(`Welcome, ${data.name}`);
       router.push("/dashboard");

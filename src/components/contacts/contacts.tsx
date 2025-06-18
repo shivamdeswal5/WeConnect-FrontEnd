@@ -128,7 +128,7 @@ const Contacts = () => {
       Promise.all(promises).then((userList) => {
         setUsers(userList);
       });
-    });
+    });    
 
     return () => {
       unsubscribers.forEach((u) => u());

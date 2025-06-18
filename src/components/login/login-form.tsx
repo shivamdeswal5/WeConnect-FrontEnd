@@ -1,5 +1,4 @@
 "use client";
-
 import React from "react";
 import { TextField, Button, Box, Typography } from "@mui/material";
 import GoogleIcon from "@mui/icons-material/Google";
@@ -15,6 +14,7 @@ import { auth } from "@/firebase/firebase";
 import { ref, set } from "firebase/database";
 import { db } from "@/firebase/firebase";
 import Link from 'next/link'
+import Cookies from 'js-cookie';
 
 interface LoginFormInputs {
   email: string;
@@ -43,20 +43,22 @@ const LoginForm = () => {
       console.warn("Firebase DB save failed:", err);
     }
 
-    await fetch("http://localhost:4000/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(userData),
-    });
+    // await fetch("http://localhost:4000/users", {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //     Authorization: `Bearer ${token}`,
+    //   },
+    //   body: JSON.stringify(userData),
+    // });
 
     const newUserData = {
       ...userData
     }
+
     localStorage.setItem("user", JSON.stringify(newUserData));
     localStorage.setItem("token", token);
+    Cookies.set('userSession', token, { expires: 1 });
   };
 
   const onSubmit = async (data: LoginFormInputs) => {

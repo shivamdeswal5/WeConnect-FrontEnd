@@ -1,4 +1,46 @@
-contact 
+implement infinite scroll in contact we can use library also
+user_service fetchuserbatch code working fine and giving user as per limit
+import { db } from "./firebase";
+import { get, limitToFirst, onValue, orderByChild, query, ref, startAfter } from "firebase/database";
+
+export function fetchAllUsers(currentUid: string, callback: (users: any[]) => void) {
+  const usersRef = ref(db, "users");
+
+  onValue(usersRef, (snapshot) => {
+    const data = snapshot.val();
+    const users = data
+      ? Object.values(data).filter((user: any) => user.uid !== currentUid)
+      : [];
+    callback(users);
+  });
+}
+
+export async function fetchUsersBatch(
+  currentUid: string,
+  lastEmail: string | null = null,
+  limit: number = 2
+): Promise<any[]> {
+  const usersRef = ref(db, "users");
+
+  const usersQuery = lastEmail
+    ? query(usersRef, orderByChild("email"), startAfter(lastEmail), limitToFirst(limit))
+    : query(usersRef, orderByChild("email"), limitToFirst(limit));
+
+  const snapshot = await get(usersQuery);
+  const data = snapshot.val();
+
+  console.log("FETCHED USERS DATA:", data);
+
+  const users = data
+    ? Object.values(data).filter((user: any) => user.uid !== currentUid)
+    : [];
+
+  return users;
+}
+
+console.log("User Data In Batch: ",fetchUsersBatch("FV3Iif0mIKQExAS2t6KJz8W300g1"))
+
+current contact page
 "use client";
 
 import {
@@ -129,7 +171,7 @@ const Contacts = () => {
       Promise.all(promises).then((userList) => {
         setUsers(userList);
       });
-    });
+    });    
 
     return () => {
       unsubscribers.forEach((u) => u());
