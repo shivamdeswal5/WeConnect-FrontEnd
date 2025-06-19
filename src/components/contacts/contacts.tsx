@@ -107,7 +107,6 @@ const Contacts = () => {
       })
     );
 
-    // Remove duplicates and sort by recent timestamp
     setUsers((prev) => {
       const uidMap = new Map<string, IUser>();
       [...prev, ...updatedUsers].forEach((user) => {

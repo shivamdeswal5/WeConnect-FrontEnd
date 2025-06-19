@@ -196,7 +196,7 @@ const Chat = () => {
     <Box flex={3} display="flex" flexDirection="column" height="100vh" width="100%">
       {currentChatId ? (
         <>
-          {/* Header */}
+       
           <Box
             display="flex"
             alignItems="center"
@@ -223,7 +223,7 @@ const Chat = () => {
             </Box>
           </Box>
 
-          {/* Messages */}
+    
           <Box
             flex={1}
             p={2}
@@ -256,7 +256,7 @@ const Chat = () => {
             <div ref={scrollRef} />
           </Box>
 
-          {/* Input Area */}
+      
           <Box px={2} py={1} borderTop="1px solid #ccc" bgcolor="#f5f5f5">
             <RichTextEditor
               ref={editorRef}
